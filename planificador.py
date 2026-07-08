@@ -279,7 +279,7 @@ class MotorSimulacion:
                 self.en_cpu = None
                 self._cambiar_zona(p, "Terminado", t_next)
                 self._registrar(f"P{p.pid} FINALIZA su ejecución -> Terminado (t={t_next}ms)")
-            elif pide_io:
+            if pide_io:
                 dur = p.duraciones_io[p.siguiente_io_idx]
                 p.siguiente_io_idx += 1
                 p.tiempo_fin_io = t_next + dur

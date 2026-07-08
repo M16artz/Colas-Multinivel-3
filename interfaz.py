@@ -805,6 +805,8 @@ class AplicacionSimulador:
                 txt.insert("end", "   (aún no ingresa al sistema)\n\n")
                 continue
             for tr in tramos:
+                if tr["tipo"] == "Terminado":
+                    continue
                 fin_val = tr["fin"] if tr["fin"] is not None else self.motor.tiempo
                 fin_txt = f"{fin_val}ms" + (" (en curso)" if tr["fin"] is None else "")
                 dur = fin_val - tr["inicio"]
