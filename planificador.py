@@ -58,6 +58,10 @@ class MotorSimulacion:
         self.en_cpu: Optional[Proceso] = None
         self.log: List[str] = []
         self.finalizada = False
+        self.metricas_calculadas = False
+        # Resultados finales (se rellenan al terminar la simulación):
+        self.tiempo_ejecucion_medio: Optional[float] = None
+        self.tiempo_espera_medio: Optional[float] = None
 
         # Historial por proceso: lista de tramos {tipo, inicio, fin}
         # tipo in {"Cola N1","Cola N2","Cola N3","CPU","E/S","Terminado"}
@@ -298,6 +302,68 @@ class MotorSimulacion:
         self.finalizada = (
             not self.pendientes_llegada and not self.bloqueados and self.en_cpu is None
             and all(len(q) == 0 for q in self.listos.values())
+        )
+
+        # Al llegar exactamente al instante en que todos los procesos han
+        # terminado, se calculan (una sola vez) el tiempo de ejecución medio
+        # y el tiempo de espera medio, y se dejan registrados en el log.
+        if self.finalizada and not self.metricas_calculadas:
+            self.metricas_calculadas = True
+            self._calcular_metricas_finales()
+
+    # ------------------------------------------------------------------ #
+    # Métricas finales: tiempo de ejecución (retorno) medio y tiempo de
+    # espera medio, calculados cuando TODOS los procesos han terminado.
+    #
+    #   T. ejecución (proceso) = t_finalizacion - t_llegada
+    #   T. espera    (proceso) = t_finalizacion - t_llegada - rafaga_total
+    #                            - (suma de duraciones de E/S)
+    #
+    # Ambos se promedian sobre la cantidad total de procesos (n).
+    # ------------------------------------------------------------------ #
+    def _calcular_metricas_finales(self):
+        n = len(self.procesos_todos)
+        if n == 0:
+            return
+
+        self._registrar("==== CÁLCULO DE TIEMPOS MEDIOS ====")
+
+        retornos = []
+        esperas = []
+
+        for p in sorted(self.procesos_todos, key=lambda x: x.pid):
+            fin = p.tiempo_finalizacion if p.tiempo_finalizacion is not None else self.tiempo
+            llegada = p.arrival_time
+            rafaga = p.rafaga_total
+            suma_io = sum(p.duraciones_io)
+
+            t_retorno = fin - llegada
+            t_espera = t_retorno - rafaga - suma_io
+
+            retornos.append(t_retorno)
+            esperas.append(t_espera)
+
+            self._registrar(
+                f"P{p.pid} ({p.nombre}) -> T.Ejecución = {fin} - {llegada} = {t_retorno}ms  |  "
+                f"T.Espera = {fin} - {llegada} - {rafaga}(ráfaga) - {suma_io}(E/S) = {t_espera}ms"
+            )
+
+        suma_retornos = sum(retornos)
+        suma_esperas = sum(esperas)
+
+        self.tiempo_ejecucion_medio = suma_retornos / n
+        self.tiempo_espera_medio = suma_esperas / n
+
+        expr_retornos = " + ".join(str(v) for v in retornos)
+        expr_esperas = " + ".join(str(v) for v in esperas)
+
+        self._registrar(
+            f"Tiempo de ejecución medio = ({expr_retornos}) / {n} = "
+            f"{suma_retornos} / {n} = {self.tiempo_ejecucion_medio:.2f}ms"
+        )
+        self._registrar(
+            f"Tiempo de espera medio = ({expr_esperas}) / {n} = "
+            f"{suma_esperas} / {n} = {self.tiempo_espera_medio:.2f}ms"
         )
 
     # ------------------------------------------------------------------ #

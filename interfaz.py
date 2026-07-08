@@ -140,16 +140,16 @@ class DialogoProceso(tk.Toplevel):
 
 
 class AplicacionSimulador:
-    LANE_H = 20        # alto en píxeles de cada carril dentro de una fila
-    GAP_FILA = 10      # separación vertical entre filas
-    RULER_H = 22       # alto reservado arriba para la regla de tiempo
+    LANE_H = 42
+    GAP_FILA = 4
+    RULER_H = 28
     TOP_PAD = 6
-    ANCHO_ETIQUETAS = 96   # ancho del panel fijo de nombres de fila (no scrollea)
+    ANCHO_ETIQUETAS = 96
 
-    ZOOM_MIN = 2
-    ZOOM_MAX = 40
-    ZOOM_PASO = 2
-    ZOOM_DEFECTO = 10
+    ZOOM_MIN = 10
+    ZOOM_MAX = 120
+    ZOOM_PASO = 5
+    ZOOM_DEFECTO = 30
 
     def __init__(self, root: tk.Tk):
         self.root = root
@@ -161,7 +161,7 @@ class AplicacionSimulador:
         self.pid_autoincrement = 1
         self.definiciones = []          # filas de la tabla (dicts)
         self.log_mostrado = 0           # cuántas líneas del log ya se imprimieron
-        self.CELDA_PX = self.ZOOM_DEFECTO   # ancho en píxeles de 1 ms (ajustable con el zoom)
+        self.CELDA_PX = 40
 
         # Geometría vertical FIJA (no depende del tiempo ni del scroll horizontal).
         self.fila_geo = {}
@@ -176,6 +176,7 @@ class AplicacionSimulador:
         self._construir_layout()
         self._cargar_ejemplo_por_defecto()
         self._dibujar_etiquetas_filas()   # estático: se dibuja una sola vez
+        ZOOM_DEFECTO = 40
 
     # ------------------------------------------------------------------ #
     # Construcción de la interfaz
@@ -240,8 +241,6 @@ class AplicacionSimulador:
         tk.Label(marco_umbral, text="que:").grid(row=0, column=1)
         self.var_umbral_env = tk.StringVar(value="1")
         tk.Entry(marco_umbral, textvariable=self.var_umbral_env, width=5).grid(row=0, column=2, padx=4)
-        tk.Label(marco_cfg, text="(mayor_igual = >=  ·  mayor = >)", font=("Arial", 7), fg="#555"
-                 ).grid(row=5, column=0, columnspan=2, sticky="w")
 
         ttk.Separator(panel_izq, orient="horizontal").pack(fill="x", pady=8)
 
@@ -519,6 +518,7 @@ class AplicacionSimulador:
         self.reproduciendo = False
         self.var_seguir.set(True)
         self.log_mostrado = 0
+        self.CELDA_PX = self.ZOOM_DEFECTO
         self.txt_log.delete("1.0", "end")
         self.canvas_gantt.delete("barra")
         self.lbl_reloj.config(text="t = 0 ms")
@@ -675,8 +675,15 @@ class AplicacionSimulador:
         while marca * cell <= ancho_total:
             x = marca * cell
             c.create_line(x, self.RULER_H, x, alto_total, fill="#f0f0f0", tags="barra")
-            c.create_text(x + 2, 2, text=str(marca), anchor="nw", font=("Arial", 7),
-                          fill="#999999", tags="barra")
+            c.create_text(
+                    x + cell/2,
+                    12,
+                    text=str(marca),
+                    anchor="center",
+                    font=("Arial", 8, "bold"),
+                    fill="#666666",
+                    tags="barra"
+)
             marca += paso_regla
 
         # --- Separadores horizontales entre filas --- #
@@ -730,19 +737,45 @@ class AplicacionSimulador:
                         c.create_line(xx, y1, xx + (y1 - y0), y0, fill="#000000", width=1, tags="barra")
                         xx += 5
                 elif cerrado:
-                    # "Tachado": marca en 'X' justo en el instante exacto de salida de la cola/E-S.
-                    s = 5
-                    c.create_line(x1 - s, y0 - 1, x1 + 2, y1 + 1, fill="#c0392b", width=2, tags="barra")
-                    c.create_line(x1 - s, y1 + 1, x1 + 2, y0 - 1, fill="#c0392b", width=2, tags="barra")
+                    pass
 
-        # línea vertical del instante actual
-        xt = t_actual * cell
-        c.create_line(xt, 0, xt, alto_total, fill="#c0392b", width=2, tags="barra")
-        c.create_text(xt + 3, self.RULER_H - 12, text=f"t={t_actual}ms", anchor="nw",
-                      font=("Arial", 8, "bold"), fill="#c0392b", tags="barra")
+                                        # =====================================================
+        # CURSOR DEL TIEMPO
+        # =====================================================
 
-        if self.reproduciendo and self.var_seguir.get():
-            c.xview_moveto(1.0)
+        xt = (t_actual + 0.5) * cell
+
+        c.create_line(
+            xt,
+            self.RULER_H + 26,
+            xt,
+            alto_total,
+            fill="#ff3b30",
+            width=3,
+            tags="barra"
+        )
+
+        ANCHO = cell
+
+        c.create_rectangle(
+            xt - ANCHO / 2,
+            2,
+            xt + ANCHO / 2,
+            26,
+            fill="#f44336",
+            outline="#f44336",
+            tags="barra"
+        )
+
+        c.create_text(
+            xt,
+            14,
+            text=f"t={t_actual}",
+            fill="white",
+            font=("Arial", 8, "bold"),
+            anchor="center",
+            tags="barra"
+        )
 
     # ------------------------------------------------------------------ #
     # Ventana de histórico detallado (tiempos iniciales de cada tramo)
