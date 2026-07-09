@@ -6,7 +6,11 @@ Dependencias: solo la biblioteca estándar de Python (tkinter).
 """
 import tkinter as tk
 from interfaz import AplicacionSimulador
+from tkinter import ttk
 
+# Justo después de crear root (tk.Tk())
+style = ttk.Style()
+style.theme_use('clam')  # 'alt' también funciona bien en macOS
 
 def main():
     root = tk.Tk()

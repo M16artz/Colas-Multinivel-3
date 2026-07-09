@@ -250,19 +250,22 @@ class AplicacionSimulador:
         marco_alg.pack(fill="x", pady=4)
         self.vars_algoritmo = {}
         defaults_alg = {1: "Prioridad", 2: "SJF", 3: "RR"}
+
+        # Filtramos la tupla para excluir "FIFO"
+        opciones_combobox = [alg for alg in ALGORITMOS_VALIDOS if alg != "FIFO"]
+
         for i, nivel in enumerate((1, 2, 3)):
             tk.Label(marco_alg, text=f"Nivel {nivel}:").grid(row=i, column=0, sticky="w")
             var = tk.StringVar(value=defaults_alg[nivel])
             self.vars_algoritmo[nivel] = var
+            
+            # Asignamos la lista filtrada a 'values'
             combo = ttk.Combobox(marco_alg, textvariable=var, state="readonly", width=11,
-                                  values=list(ALGORITMOS_VALIDOS))
+                                values=opciones_combobox)
             combo.grid(row=i, column=1, padx=4, pady=2)
             combo.bind("<<ComboboxSelected>>", self._aplicar_config_en_vivo)
         tk.Label(panel_izq, text="(el cambio de algoritmo se aplica al instante,\naun con la simulación corriendo)",
                  font=("Arial", 7), fg="#555", justify="left").pack(anchor="w")
-
-        tk.Button(panel_izq, text="Aplicar quantum / envejecimiento ahora",
-                  command=self._aplicar_config_en_vivo).pack(fill="x", pady=(6, 0))
 
         ttk.Separator(panel_izq, orient="horizontal").pack(fill="x", pady=8)
 
@@ -357,6 +360,7 @@ class AplicacionSimulador:
         barra_h = tk.Scrollbar(marco_contenido, orient="horizontal", command=_scroll_manual)
         self.canvas_gantt.configure(xscrollcommand=barra_h.set, scrollregion=(0, 0, 1000, alto_canvas))
         self.canvas_gantt.pack(side="top", fill="both", expand=True)
+        self.canvas_gantt.update_idletasks()
         barra_h.pack(side="top", fill="x")
 
         def _rueda_manual(_evento):
@@ -378,7 +382,7 @@ class AplicacionSimulador:
         tk.Label(panel_der, text="Registro de eventos", font=("Arial", 11, "bold")).pack(anchor="w", pady=(6, 0))
         marco_log = tk.Frame(panel_der)
         marco_log.pack(fill="both", expand=False)
-        self.txt_log = tk.Text(marco_log, height=11, font=("Consolas", 9), bg="#111", fg="#0f0")
+        self.txt_log = tk.Text(marco_log, height=11, font=("Menlo", 9), bg="#111", fg="#0f0")
         barra = tk.Scrollbar(marco_log, command=self.txt_log.yview)
         self.txt_log.configure(yscrollcommand=barra.set)
         self.txt_log.pack(side="left", fill="both", expand=True)
