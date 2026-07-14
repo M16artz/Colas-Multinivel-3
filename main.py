@@ -6,13 +6,28 @@ Dependencias: solo la biblioteca estándar de Python (tkinter).
 """
 import tkinter as tk
 from interfaz import AplicacionSimulador
-from tkinter import ttk
 
-# Justo después de crear root (tk.Tk())
-style = ttk.Style()
-style.theme_use('clam')  # 'alt' también funciona bien en macOS
+
+def _fijar_dpi_awareness():
+    """En Windows, si el proceso no está marcado como "DPI aware", Tk puede
+    mostrar mal los popups sin bordes (overrideredirect) -por ejemplo, el
+    desplegable de un ttk.Combobox- como una ventana normal con título "tk".
+    Se corrige marcando el proceso como DPI aware ANTES de crear el root."""
+    import sys
+    if sys.platform.startswith("win"):
+        try:
+            import ctypes
+            ctypes.windll.shcore.SetProcessDpiAwareness(1)
+        except Exception:
+            try:
+                import ctypes
+                ctypes.windll.user32.SetProcessDPIAware()
+            except Exception:
+                pass
+
 
 def main():
+    _fijar_dpi_awareness()
     root = tk.Tk()
     app = AplicacionSimulador(root)
     root.mainloop()
